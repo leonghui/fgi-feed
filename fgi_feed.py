@@ -72,17 +72,17 @@ def get_latest_fgi():
         fgi_values = chart_section.select('ul > li')
         fgi_value = next(iter(fgi_values), None)
 
+        date_section = page_soup.find(id='needleAsOfDate')
+
+        fgi_datetime = extract_datetime(date_section.text, CNN_TZ)
+
         item = {
-            'id': chart_url,  # use chart URL as unique id
+            'id': fgi_datetime.isoformat('T'),  # use timestamp as unique id
             'url': feed_url,
             'title': feed_title,
+            'date_published': fgi_datetime.isoformat('T'),
             'content_text': fgi_value.text
         }
-
-        date_section = page_soup.find(id='needleAsOfDate')
-        if date_section is not None:
-            fgi_datetime = extract_datetime(date_section.text, CNN_TZ)
-            item['date_published'] = fgi_datetime.isoformat('T')
 
         items_list.append(item)
 
