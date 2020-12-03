@@ -33,15 +33,6 @@ def extract_datetime(text, default_tz):
     return datetime_obj.astimezone(default_tz)
 
 
-def extract_background_image(soup):
-    style = parseStyle(soup)
-    url = style['background-image'] \
-        .replace('url(', '') \
-        .replace(')', '')
-
-    return url
-
-
 def get_latest_fgi():
     page_response = requests.get(MONEY_CNN_URL + FGI_URI)
 
@@ -77,10 +68,6 @@ def get_latest_fgi():
 
     if chart_section is not None:
 
-        chart_css = chart_section['style']
-        chart_url = extract_background_image(
-            chart_css).replace('http', 'https')
-
         fgi_values = chart_section.select('ul > li')
         fgi_value = next(iter(fgi_values), None)
 
@@ -88,8 +75,7 @@ def get_latest_fgi():
             'id': chart_url,  # use chart URL as unique id
             'url': feed_url,
             'title': feed_title,
-            'content_html': f'<p>{fgi_value.text}</p>'
-            f'<img src=\"{chart_url}\" />'
+            'content_text': fgi_value.text
         }
 
         date_section = page_soup.find(id='needleAsOfDate')
