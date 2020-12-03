@@ -28,9 +28,10 @@ def extract_datetime(text, default_tz):
             pass
 
     # assume same year as query time
-    datetime_obj = datetime_obj.replace(year=datetime.now().year)
+    datetime_obj = datetime_obj.replace(
+        year=datetime.now().year, tzinfo=default_tz)
 
-    return datetime_obj.astimezone(default_tz)
+    return datetime_obj.astimezone(timezone('UTC'))
 
 
 def get_latest_fgi():
