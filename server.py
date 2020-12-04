@@ -10,7 +10,9 @@ app = Flask(__name__)
 def form():
     try:
         output = get_latest_fgi()
-        return jsonify(output)
+        response = jsonify(output)
+        response.mimetype = 'application/feed+json'
+        return response
     except exceptions.RequestException:
         return f"Error generating output for CNN Fear & Greed Index."
 
