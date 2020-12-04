@@ -88,6 +88,3 @@ def get_latest_fgi():
     output['items'] = items_list
 
     return output
-
-
-get_latest_fgi()
