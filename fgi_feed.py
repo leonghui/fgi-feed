@@ -28,8 +28,7 @@ def extract_datetime(text, default_tz):
             pass
 
     # assume same year as query time
-    datetime_obj = datetime_obj.replace(
-        year=datetime.now().year, tzinfo=default_tz)
+    datetime_obj = default_tz.localize(datetime_obj.replace(year=datetime.now().year))
 
     return datetime_obj.astimezone(timezone('UTC'))
 
