@@ -54,15 +54,6 @@ def get_latest_fgi(logger):
         'favicon': MONEY_CNN_URL + FGI_FAVICON_URI
     }
 
-    header = page_soup.head
-
-    try:
-        page_desc = header.select_one("meta[name='description']")['content']
-        if page_desc:
-            output['description'] = page_desc.strip()
-    except TypeError:
-        logger.info('Description not found')
-
     chart_section = page_soup.find(id='needleChart')
 
     items_list = []
