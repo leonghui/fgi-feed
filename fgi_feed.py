@@ -78,7 +78,7 @@ def get_latest_fgi(logger):
         item = {
             'id': fgi_datetime.isoformat('T'),  # use timestamp as unique id
             'url': feed_url,
-            'title': feed_title,
+            'title': f"Fear & Greed Index - {date_section.text}",
             'date_published': fgi_datetime.isoformat('T'),
             'content_text': fgi_value.text
         }
