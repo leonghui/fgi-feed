@@ -28,7 +28,8 @@ def extract_datetime(text, default_tz):
             pass
 
     # assume same year as query time
-    datetime_obj = default_tz.localize(datetime_obj.replace(year=datetime.now().year))
+    datetime_obj = default_tz.localize(
+        datetime_obj.replace(year=datetime.now().year))
 
     return datetime_obj.astimezone(timezone('UTC'))
 
@@ -66,8 +67,7 @@ def get_latest_fgi(logger):
 
     items_list = []
 
-    if chart_section is not None:
-
+    if chart_section:
         fgi_values = chart_section.select('ul > li')
         fgi_value = next(iter(fgi_values), None)
 
