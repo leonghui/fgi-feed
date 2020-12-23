@@ -1,20 +1,19 @@
-from flask import Flask, request, jsonify
-from requests import exceptions
-
+from flask import Flask, jsonify, abort
+from flask.logging import create_logger
 from fgi_feed import get_latest_fgi
 
 app = Flask(__name__)
-
+logger = create_logger(app)
 
 @app.route('/', methods=['GET'])
 def form():
     try:
-        output = get_latest_fgi()
+        output = get_latest_fgi(logger)
         response = jsonify(output)
         response.mimetype = 'application/feed+json'
         return response
-    except exceptions.RequestException:
-        return f"Error generating output for CNN Fear & Greed Index."
+    except Exception:
+        abort(500, description='Error generating output')
 
 
 if __name__ == '__main__':

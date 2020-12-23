@@ -1,10 +1,10 @@
-import logging
 from cssutils import parseStyle
 from datetime import datetime
 from pytz import timezone
 
 import requests
 from bs4 import BeautifulSoup
+from flask import abort
 
 JSONFEED_VERSION_URL = 'https://jsonfeed.org/version/1.1'
 MONEY_CNN_URL = 'https://money.cnn.com'
@@ -33,12 +33,12 @@ def extract_datetime(text, default_tz):
     return datetime_obj.astimezone(timezone('UTC'))
 
 
-def get_latest_fgi():
+def get_latest_fgi(logger):
     page_response = requests.get(MONEY_CNN_URL + FGI_URI)
 
     # return HTTP error code
     if not page_response.ok:
-        return f"Error {page_response.status_code}"
+        abort(500, f"HTTP status from source: {page_response.status_code}")
 
     page_content = page_response.text
 
@@ -60,7 +60,7 @@ def get_latest_fgi():
         if page_desc:
             output['description'] = page_desc.strip()
     except TypeError:
-        logging.info('Description not found')
+        logger.info('Description not found')
 
     chart_section = page_soup.find(id='needleChart')
 
@@ -84,6 +84,9 @@ def get_latest_fgi():
         }
 
         items_list.append(item)
+
+    else:
+        logger.warning('Chart section not found')
 
     output['items'] = items_list
 
