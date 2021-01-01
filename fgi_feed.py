@@ -52,7 +52,7 @@ def remove_empty_from_dict(d):
         return d
 
 
-def get_latest_fgi(logger):
+def get_latest_fgi(logger, method=None):
     page_url = MONEY_CNN_URL + FGI_URI
 
     logger.debug(f'Querying endpoint: {page_url}')
@@ -80,18 +80,32 @@ def get_latest_fgi(logger):
     if chart_section:
         fgi_values = chart_section.select('ul > li')
         fgi_value = next(iter(fgi_values), None)
+        fgi_absolute_value = fgi_value.text.replace('Fear & Greed Now: ', '')
 
         date_section = page_soup.select_one('div#needleAsOfDate')
 
-        fgi_datetime = extract_datetime(date_section.text, CNN_TZ).isoformat(
-            'T') if date_section else None
+        fgi_datetime = extract_datetime(
+            date_section.text, CNN_TZ) if date_section else None
+
+        if method == ROUND.DAY:
+            item_title = 'Fear & Greed Daily: ' + fgi_absolute_value
+            item_date_modified = fgi_datetime.replace(minute=0, hour=0)
+            item_content_text = 'Since ' + fgi_datetime.strftime('%b %d')
+        elif method == ROUND.HOUR:
+            item_title = 'Fear & Greed Hourly: ' + fgi_absolute_value
+            item_date_modified = fgi_datetime.replace(minute=0)
+            item_content_text = 'Since ' + fgi_datetime.strftime('%b %d %I:00 %p')
+        else:
+            item_title = fgi_value.text
+            item_date_modified = fgi_datetime
+            item_content_text = date_section.text
 
         feed_item = JsonFeedItem(
-            id=fgi_datetime,  # use timestamp as unique id
+            id=item_date_modified.isoformat('T'),  # use timestamp as unique id
             url=page_url,
-            title=f"Fear & Greed Index - {date_section.text}",
-            date_published=fgi_datetime,
-            content_text=fgi_value.text
+            title=item_title,
+            date_modified=item_date_modified.isoformat('T'),
+            content_text=item_content_text
         )
 
         json_feed.items.append(feed_item)
