@@ -89,22 +89,22 @@ def get_latest_fgi(logger, method=None):
 
         if method == ROUND.DAY:
             item_title = 'Fear & Greed Daily: ' + fgi_absolute_value
-            item_date_modified = fgi_datetime.replace(minute=0, hour=0)
+            item_date_published = fgi_datetime.replace(minute=0, hour=0)
             item_content_text = 'Since ' + fgi_datetime.strftime('%b %d')
         elif method == ROUND.HOUR:
             item_title = 'Fear & Greed Hourly: ' + fgi_absolute_value
-            item_date_modified = fgi_datetime.replace(minute=0)
+            item_date_published = fgi_datetime.replace(minute=0)
             item_content_text = 'Since ' + fgi_datetime.strftime('%b %d %I:00 %p')
         else:
             item_title = fgi_value.text
-            item_date_modified = fgi_datetime
+            item_date_published = fgi_datetime
             item_content_text = date_section.text
 
         feed_item = JsonFeedItem(
-            id=item_date_modified.isoformat('T'),  # use timestamp as unique id
+            id=item_date_published.isoformat('T'),  # use timestamp as unique id
             url=page_url,
             title=item_title,
-            date_modified=item_date_modified.isoformat('T'),
+            date_published=item_date_published.isoformat('T'),
             content_text=item_content_text
         )
 
