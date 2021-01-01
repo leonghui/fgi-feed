@@ -2,4 +2,3 @@ flask
 requests
 pytz
 bs4
-cssutils
