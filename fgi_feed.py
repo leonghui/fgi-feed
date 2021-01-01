@@ -27,9 +27,9 @@ def extract_datetime(text, default_tz):
         except ValueError:
             pass
 
-    # assume same year as query time
-    datetime_obj = default_tz.localize(
-        datetime_obj.replace(year=datetime.now().year))
+    # assume same year as query time, in US/Eastern timezone
+    datetime_obj = datetime_obj.replace(
+        year=datetime.now().astimezone(CNN_TZ).year)
 
     return datetime_obj.astimezone(timezone('UTC'))
 
