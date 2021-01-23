@@ -53,25 +53,29 @@ def remove_empty_from_dict(d):
 
 
 def get_latest_fgi(logger, method=None):
-    page_url = MONEY_CNN_URL + FGI_URI
+    url = MONEY_CNN_URL + FGI_URI
 
-    logger.debug(f'Querying endpoint: {page_url}')
-    page_response = session.get(page_url)
+    logger.debug(f'Querying endpoint: {url}')
+    try:
+        response = session.get(url)
+    except Exception as ex:
+        logger.debug('Exception:' + ex)
+        abort(500, description=ex)
 
     # return HTTP error code
-    if not page_response.ok:
-        logger.debug('Error from source, dumping input:')
-        logger.debug(page_response.text)
+    if not response.ok:
+        logger.error('Error from source')
+        logger.debug('Dumping input:' + response.text)
         abort(
-            500, description=f"HTTP status from source: {page_response.status_code}")
+            500, description='HTTP status from source: ' + str(response.status_code))
 
-    page_soup = BeautifulSoup(page_response.text, features='html.parser')
+    page_soup = BeautifulSoup(response.text, features='html.parser')
     feed_title = page_soup.title.text if page_soup else None
 
     json_feed = JsonFeedTopLevel(
         items=[],
         title=feed_title,
-        home_page_url=page_url,
+        home_page_url=url,
         favicon=MONEY_CNN_URL + FGI_FAVICON_URI
     )
 
@@ -94,15 +98,17 @@ def get_latest_fgi(logger, method=None):
         elif method == ROUND.HOUR:
             item_title = 'Fear & Greed Hourly: ' + fgi_absolute_value
             item_date_published = fgi_datetime.replace(minute=0)
-            item_content_text = 'Since ' + fgi_datetime.strftime('%b %d %I:00 %p')
+            item_content_text = 'Since ' + \
+                fgi_datetime.strftime('%b %d %I:00 %p')
         else:
             item_title = fgi_value.text
             item_date_published = fgi_datetime
             item_content_text = date_section.text
 
         feed_item = JsonFeedItem(
-            id=item_date_published.isoformat('T'),  # use timestamp as unique id
-            url=page_url,
+            id=item_date_published.isoformat(
+                'T'),  # use timestamp as unique id
+            url=url,
             title=item_title,
             date_published=item_date_published.isoformat('T'),
             content_text=item_content_text
