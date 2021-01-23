@@ -83,8 +83,9 @@ def get_latest_fgi(logger, method=None):
 
     if chart_section:
         fgi_values = chart_section.select('ul > li')
-        fgi_value = next(iter(fgi_values), None)
+        fgi_value = fgi_values[0]
         fgi_absolute_value = fgi_value.text.replace('Fear & Greed Now: ', '')
+        fgi_close_value = fgi_values[1]
 
         date_section = page_soup.select_one('div#needleAsOfDate')
 
@@ -92,9 +93,9 @@ def get_latest_fgi(logger, method=None):
             date_section.text, CNN_TZ) if date_section else None
 
         if method == ROUND.DAY:
-            item_title = 'Fear & Greed Daily: ' + fgi_absolute_value
+            item_title = fgi_close_value.text
             item_date_published = fgi_datetime.replace(minute=0, hour=0)
-            item_content_text = 'Since ' + fgi_datetime.strftime('%b %d')
+            item_content_text = 'As of ' + fgi_datetime.strftime('%b %d')
         elif method == ROUND.HOUR:
             item_title = 'Fear & Greed Hourly: ' + fgi_absolute_value
             item_date_published = fgi_datetime.replace(minute=0)
