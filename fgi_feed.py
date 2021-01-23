@@ -37,9 +37,9 @@ def extract_datetime(text, default_tz):
 
     # assume same year as query time, in US/Eastern timezone
     datetime_obj = datetime_obj.replace(
-        year=datetime.now().astimezone(CNN_TZ).year)
+        year=CNN_TZ.localize(datetime.now()).year)
 
-    return datetime_obj.astimezone(timezone('UTC'))
+    return CNN_TZ.localize(datetime_obj)
 
 
 # modified from https://stackoverflow.com/a/24893252
@@ -106,12 +106,13 @@ def get_latest_fgi(logger, method=None):
             item_date_published = fgi_datetime
             item_content_text = date_section.text
 
+        item_date_published_formatted = item_date_published.isoformat('T')
+
         feed_item = JsonFeedItem(
-            id=item_date_published.isoformat(
-                'T'),  # use timestamp as unique id
+            id=item_date_published_formatted,  # use timestamp as unique id
             url=url,
             title=item_title,
-            date_published=item_date_published.isoformat('T'),
+            date_published=item_date_published_formatted,
             content_text=item_content_text
         )
 
