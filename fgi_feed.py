@@ -55,11 +55,11 @@ def remove_empty_from_dict(d):
 def get_latest_fgi(logger, method=None):
     url = MONEY_CNN_URL + FGI_URI
 
-    logger.debug(f'Querying endpoint: {url}')
+    logger.debug(f"Querying endpoint: {url}")
     try:
         response = session.get(url)
     except Exception as ex:
-        logger.debug('Exception:' + ex)
+        logger.error(f"Exception: {ex}")
         abort(500, description=ex)
 
     # return HTTP error code
@@ -67,7 +67,7 @@ def get_latest_fgi(logger, method=None):
         logger.error('Error from source')
         logger.debug('Dumping input:' + response.text)
         abort(
-            500, description='HTTP status from source: ' + str(response.status_code))
+            500, description=f"HTTP status from source: {response.status_code}")
 
     page_soup = BeautifulSoup(response.text, features='html.parser')
     feed_title = page_soup.title.text if page_soup else None
