@@ -1,7 +1,7 @@
 # fgi-feed
-A simple Python script to generate a [JSON Feed](https://jsonfeed.org/) for the [CNNMoney Fear & Greed Index](https://money.cnn.com/data/fear-and-greed/).
+A simple Python script to generate a [JSON Feed](https://jsonfeed.org/) for the [CNNMoney Fear & Greed Index](https://edition.cnn.com/markets/fear-and-greed).
 
-Uses [BeautifulSoup 4](https://www.crummy.com/software/BeautifulSoup/) and served over [Flask!](https://github.com/pallets/flask/)
+Served over [Flask!](https://github.com/pallets/flask/)
 
 Use the [Docker build](https://github.com/users/leonghui/packages/container/package/fgi-feed) to host your own instance.
 
