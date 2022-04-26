@@ -1,16 +1,17 @@
 from datetime import datetime
 from pytz import timezone
 from requests import Session
-from bs4 import BeautifulSoup
 from flask import abort
 from dataclasses import asdict
 from enum import Enum, auto
 
 from json_feed_data import JsonFeedTopLevel, JsonFeedItem
 
-MONEY_CNN_URL = 'https://money.cnn.com'
-FGI_URI = '/data/fear-and-greed/'
-FGI_FAVICON_URI = '/favicon.ico'
+FGI_JSON_URL = 'https://production.dataviz.cnn.io'
+FGI_JSON_URI = '/index/fearandgreed/graphdata'
+CNN_URL = 'https://edition.cnn.com'
+CNN_FAVICON_URI = '/media/sites/cnn/business-favicon.ico'
+FGI_URI = '/markets/fear-and-greed'
 CNN_TZ = timezone('US/Eastern')
 
 session = Session()
@@ -52,8 +53,26 @@ def remove_empty_from_dict(d):
         return d
 
 
+def process_response(response, logger):
+   # return HTTP error code
+    if not response.ok:
+        logger.error('Error from source')
+        logger.debug('Dumping input:' + response.text)
+        abort(
+            500, description=f"HTTP status from source: {response.status_code}")
+    
+    try:
+        return response.json()
+    except ValueError:
+        logger.error(f'"{query_object.query}" - invalid API response')
+        logger.debug(
+            f'"{query_object.query}" - dumping input: {response.text}')
+        abort(
+            500, description='Invalid API response')
+
+
 def get_latest_fgi(logger, method=None):
-    url = MONEY_CNN_URL + FGI_URI
+    url = FGI_JSON_URL + FGI_JSON_URI
 
     logger.debug(f"Querying endpoint: {url}")
     try:
@@ -61,64 +80,53 @@ def get_latest_fgi(logger, method=None):
     except Exception as ex:
         logger.error(f"Exception: {ex}")
         abort(500, description=ex)
-
-    # return HTTP error code
-    if not response.ok:
-        logger.error('Error from source')
-        logger.debug('Dumping input:' + response.text)
-        abort(
-            500, description=f"HTTP status from source: {response.status_code}")
-
-    page_soup = BeautifulSoup(response.text, features='html.parser')
-    feed_title = page_soup.title.text if page_soup else None
+    
+    response_json = process_response(response, logger)
+ 
+    feed_title = 'Fear and Greed Index'
 
     json_feed = JsonFeedTopLevel(
         items=[],
         title=feed_title,
-        home_page_url=url,
-        favicon=MONEY_CNN_URL + FGI_FAVICON_URI
+        home_page_url=CNN_URL + FGI_URI,
+        favicon=CNN_URL + CNN_FAVICON_URI
     )
 
-    chart_section = page_soup.select_one('div#needleChart')
+    fgi_historical_section = response_json.get('fear_and_greed_historical')
+    fgi_historical_data = fgi_historical_section.get('data')
+    latest_fgi = len(fgi_historical_data) - 1
 
-    if chart_section:
-        fgi_values = chart_section.select('ul > li')
-        fgi_value = fgi_values[0]
-        fgi_absolute_value = fgi_value.text.replace('Fear & Greed Now: ', '')
-        fgi_close_value = fgi_values[1]
-
-        date_section = page_soup.select_one('div#needleAsOfDate')
-
-        fgi_datetime = extract_datetime(
-            date_section.text, CNN_TZ) if date_section else None
+    if fgi_historical_section:
+        
+        fgi_latest_obj = fgi_historical_data[latest_fgi]
+        fgi_latest_value = fgi_latest_obj.get('y')
+        fgi_latest_timestamp = fgi_latest_obj.get('x') / 1000   # convert from millisecond to second
+        fgi_latest_rating = fgi_latest_obj.get('rating')
+        fgi_close_obj = fgi_historical_data[latest_fgi - 2]
+        fgi_close_value = fgi_close_obj.get('y')
+        fgi_close_timestamp = fgi_close_obj.get('x') / 1000     # convert from millisecond to second
+        fgi_close_rating = fgi_close_obj.get('rating')
 
         if method == ROUND.DAY:
-            item_title = fgi_close_value.text
-            item_date_published = fgi_datetime.replace(minute=0, hour=0)
-            item_content_text = 'As of ' + fgi_datetime.strftime('%b %d')
+            item_title = f"Fear & Greed Previous Close: {fgi_close_value} ({fgi_close_rating})"
+            item_date_published = datetime.fromtimestamp(fgi_close_timestamp).isoformat()
         elif method == ROUND.HOUR:
-            item_title = 'Fear & Greed Hourly: ' + fgi_absolute_value
-            item_date_published = fgi_datetime.replace(minute=0)
-            item_content_text = 'Since ' + \
-                fgi_datetime.strftime('%b %d %I:00 %p')
-        else:
-            item_title = fgi_value.text
-            item_date_published = fgi_datetime
-            item_content_text = date_section.text
-
-        item_date_published_formatted = item_date_published.isoformat('T')
-
+            item_title = f"Fear & Greed Latest: {fgi_latest_value} ({fgi_latest_rating})"
+            item_date_published = datetime.fromtimestamp(fgi_latest_timestamp).isoformat()
+        
+        item_content_text = 'As of ' + item_date_published
+        
         feed_item = JsonFeedItem(
-            id=item_date_published_formatted,  # use timestamp as unique id
+            id=item_date_published,  # use timestamp as unique id
             url=url,
             title=item_title,
-            date_published=item_date_published_formatted,
+            date_published=item_date_published,
             content_text=item_content_text
         )
 
         json_feed.items.append(feed_item)
 
     else:
-        logger.warning('Chart section not found')
+        logger.warning('Historical values not found')
 
     return remove_empty_from_dict(asdict(json_feed))
