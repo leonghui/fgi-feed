@@ -1,5 +1,4 @@
 from datetime import datetime
-from pytz import timezone
 from requests import Session
 from flask import abort
 from dataclasses import asdict
@@ -12,7 +11,6 @@ FGI_JSON_URI = '/index/fearandgreed/graphdata'
 CNN_URL = 'https://edition.cnn.com'
 CNN_FAVICON_URI = '/media/sites/cnn/business-favicon.ico'
 FGI_URI = '/markets/fear-and-greed'
-CNN_TZ = timezone('US/Eastern')
 
 session = Session()
 
@@ -20,27 +18,6 @@ session = Session()
 class ROUND(Enum):
     DAY = auto()
     HOUR = auto()
-
-
-def extract_datetime(text, default_tz):
-    datetime_formats = [
-        'Last updated %b %d at %I:%M%p'
-    ]
-
-    # default timestamp
-    datetime_obj = datetime.now()
-
-    for datetime_format in datetime_formats:
-        try:
-            datetime_obj = datetime.strptime(text, datetime_format)
-        except ValueError:
-            pass
-
-    # assume same year as query time, in US/Eastern timezone
-    datetime_obj = datetime_obj.replace(
-        year=CNN_TZ.localize(datetime.now()).year)
-
-    return CNN_TZ.localize(datetime_obj)
 
 
 # modified from https://stackoverflow.com/a/24893252
@@ -60,7 +37,7 @@ def process_response(response, logger):
         logger.debug('Dumping input:' + response.text)
         abort(
             500, description=f"HTTP status from source: {response.status_code}")
-    
+
     try:
         return response.json()
     except ValueError:
@@ -80,9 +57,9 @@ def get_latest_fgi(logger, method=None):
     except Exception as ex:
         logger.error(f"Exception: {ex}")
         abort(500, description=ex)
-    
+
     response_json = process_response(response, logger)
- 
+
     feed_title = 'Fear and Greed Index'
 
     json_feed = JsonFeedTopLevel(
@@ -97,7 +74,7 @@ def get_latest_fgi(logger, method=None):
     latest_fgi = len(fgi_historical_data) - 1
 
     if fgi_historical_section:
-        
+
         fgi_latest_obj = fgi_historical_data[latest_fgi]
         fgi_latest_value = fgi_latest_obj.get('y')
         fgi_latest_timestamp = fgi_latest_obj.get('x')
@@ -116,9 +93,9 @@ def get_latest_fgi(logger, method=None):
 
         converted_date = datetime.fromtimestamp(
             item_date_published / 1000)   # convert from millisecond to second
-        
+
         item_content_text = 'As of ' + converted_date.strftime('%c')
-        
+
         feed_item = JsonFeedItem(
             id=item_date_published,  # use timestamp as unique id
             url=url,
