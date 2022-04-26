@@ -3,6 +3,7 @@ from requests import Session
 from flask import abort
 from dataclasses import asdict
 from enum import Enum, auto
+from math import floor
 
 from json_feed_data import JsonFeedTopLevel, JsonFeedItem
 
@@ -76,11 +77,11 @@ def get_latest_fgi(logger, method=None):
     if fgi_historical_section:
 
         fgi_latest_obj = fgi_historical_data[latest_fgi]
-        fgi_latest_value = fgi_latest_obj.get('y')
+        fgi_latest_value = floor(fgi_latest_obj.get('y'))
         fgi_latest_timestamp = fgi_latest_obj.get('x')
         fgi_latest_rating = fgi_latest_obj.get('rating')
         fgi_close_obj = fgi_historical_data[latest_fgi - 2]
-        fgi_close_value = fgi_close_obj.get('y')
+        fgi_close_value = floor(fgi_close_obj.get('y'))
         fgi_close_timestamp = fgi_close_obj.get('x')
         fgi_close_rating = fgi_close_obj.get('rating')
 
