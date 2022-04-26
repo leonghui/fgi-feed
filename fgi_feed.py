@@ -100,27 +100,30 @@ def get_latest_fgi(logger, method=None):
         
         fgi_latest_obj = fgi_historical_data[latest_fgi]
         fgi_latest_value = fgi_latest_obj.get('y')
-        fgi_latest_timestamp = fgi_latest_obj.get('x') / 1000   # convert from millisecond to second
+        fgi_latest_timestamp = fgi_latest_obj.get('x')
         fgi_latest_rating = fgi_latest_obj.get('rating')
         fgi_close_obj = fgi_historical_data[latest_fgi - 2]
         fgi_close_value = fgi_close_obj.get('y')
-        fgi_close_timestamp = fgi_close_obj.get('x') / 1000     # convert from millisecond to second
+        fgi_close_timestamp = fgi_close_obj.get('x')
         fgi_close_rating = fgi_close_obj.get('rating')
 
         if method == ROUND.DAY:
             item_title = f"Fear & Greed Previous Close: {fgi_close_value} ({fgi_close_rating})"
-            item_date_published = datetime.fromtimestamp(fgi_close_timestamp).isoformat()
+            item_date_published = fgi_close_timestamp
         elif method == ROUND.HOUR:
             item_title = f"Fear & Greed Latest: {fgi_latest_value} ({fgi_latest_rating})"
-            item_date_published = datetime.fromtimestamp(fgi_latest_timestamp).isoformat()
+            item_date_published = fgi_latest_timestamp
+
+        converted_date = datetime.fromtimestamp(
+            item_date_published / 1000)   # convert from millisecond to second
         
-        item_content_text = 'As of ' + item_date_published
+        item_content_text = 'As of ' + converted_date.strftime('%c')
         
         feed_item = JsonFeedItem(
             id=item_date_published,  # use timestamp as unique id
             url=url,
             title=item_title,
-            date_published=item_date_published,
+            date_published=converted_date.isoformat(),
             content_text=item_content_text
         )
 
