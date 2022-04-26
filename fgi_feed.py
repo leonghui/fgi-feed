@@ -98,7 +98,7 @@ def get_latest_fgi(logger, method=None):
         item_content_text = 'As of ' + converted_date.strftime('%c')
 
         feed_item = JsonFeedItem(
-            id=item_date_published,  # use timestamp as unique id
+            id=str(item_date_published),  # use timestamp as unique id
             url=url,
             title=item_title,
             date_published=converted_date.isoformat(),
