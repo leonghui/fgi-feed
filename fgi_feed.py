@@ -1,11 +1,11 @@
 from datetime import datetime
-from requests import Session
-from flask import abort
-from dataclasses import asdict
 from enum import Enum, auto
 from math import floor
 
-from json_feed_data import JsonFeedTopLevel, JsonFeedItem, JSONFEED_VERSION_URL
+from flask import abort
+from requests import Session
+
+from json_feed_data import JSONFEED_VERSION_URL, JsonFeedItem, JsonFeedTopLevel
 
 FGI_JSON_URL = 'https://production.dataviz.cnn.io'
 FGI_JSON_URI = '/index/fearandgreed/graphdata'
