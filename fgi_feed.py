@@ -5,7 +5,7 @@ from dataclasses import asdict
 from enum import Enum, auto
 from math import floor
 
-from json_feed_data import JsonFeedTopLevel, JsonFeedItem
+from json_feed_data import JsonFeedTopLevel, JsonFeedItem, JSONFEED_VERSION_URL
 
 FGI_JSON_URL = 'https://production.dataviz.cnn.io'
 FGI_JSON_URI = '/index/fearandgreed/graphdata'
@@ -19,16 +19,6 @@ session = Session()
 class ROUND(Enum):
     DAY = auto()
     HOUR = auto()
-
-
-# modified from https://stackoverflow.com/a/24893252
-def remove_empty_from_dict(d):
-    if isinstance(d, dict):
-        return dict((k, remove_empty_from_dict(v)) for k, v in d.items() if v and remove_empty_from_dict(v))
-    elif isinstance(d, list):
-        return [remove_empty_from_dict(v) for v in d if v and remove_empty_from_dict(v)]
-    else:
-        return d
 
 
 def process_response(response, logger):
@@ -63,12 +53,7 @@ def get_latest_fgi(logger, method=None):
 
     feed_title = 'Fear and Greed Index'
 
-    json_feed = JsonFeedTopLevel(
-        items=[],
-        title=feed_title,
-        home_page_url=CNN_URL + FGI_URI,
-        favicon=CNN_URL + CNN_FAVICON_URI
-    )
+    generated_items = []
 
     fgi_historical_section = response_json.get('fear_and_greed_historical')
     fgi_historical_data = fgi_historical_section.get('data')
@@ -115,9 +100,17 @@ def get_latest_fgi(logger, method=None):
             content_text=item_content_text
         )
 
-        json_feed.items.append(feed_item)
+        generated_items.append(feed_item)
 
     else:
         logger.warning('Historical values not found')
+
+    json_feed = JsonFeedTopLevel(
+        title=feed_title,
+        items=generated_items,
+        version=JSONFEED_VERSION_URL,
+        home_page_url=CNN_URL + FGI_URI,
+        favicon=CNN_URL + CNN_FAVICON_URI
+    )
 
     return json_feed
