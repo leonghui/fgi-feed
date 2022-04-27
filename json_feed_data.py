@@ -21,7 +21,7 @@ class JsonFeedItem():
     date_published: str = None
     date_modified: str = None
     authors: list[JsonFeedAuthor] = field(default_factory=list)
-    author: JsonFeedAuthor = None  # deprecated
+
 
 @dataclass
 class JsonFeedTopLevel():
@@ -32,4 +32,3 @@ class JsonFeedTopLevel():
     description: str = None
     favicon: str = None
     authors: list[JsonFeedAuthor] = field(default_factory=list)
-    author: JsonFeedAuthor = None  # deprecated
