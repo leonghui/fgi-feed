@@ -109,7 +109,7 @@ def get_latest_fgi(logger, method=None):
 
         feed_item = JsonFeedItem(
             id=str(item_timestamp),  # use timestamp as unique id
-            url=url,
+            url=CNN_URL + FGI_URI,
             title=item_title,
             date_published=converted_date.isoformat(),
             content_text=item_content_text
