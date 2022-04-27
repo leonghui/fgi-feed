@@ -78,15 +78,15 @@ def get_latest_fgi(logger, method=None):
             item_title = f"Fear & Greed Latest: {fgi_latest_value} ({fgi_latest_rating})"
 
         if method == ROUND.DAY:
-            converted_date = datetime.fromtimestamp(
+            converted_date = datetime.utcfromtimestamp(
                 fgi_close_timestamp / 1000)   # convert from millisecond to second
             item_timestamp = fgi_close_timestamp
         elif method == ROUND.HOUR:
-            converted_date = datetime.fromtimestamp(
+            converted_date = datetime.utcfromtimestamp(
                 fgi_latest_timestamp / 1000).replace(minute=0, second=0, microsecond=0)
             item_timestamp = converted_date.timestamp()
         else:
-            converted_date = datetime.fromtimestamp(
+            converted_date = datetime.utcfromtimestamp(
                 fgi_latest_timestamp / 1000)   # convert from millisecond to second
             item_timestamp = fgi_latest_timestamp
 
