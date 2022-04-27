@@ -120,4 +120,4 @@ def get_latest_fgi(logger, method=None):
     else:
         logger.warning('Historical values not found')
 
-    return remove_empty_from_dict(asdict(json_feed))
+    return json_feed
