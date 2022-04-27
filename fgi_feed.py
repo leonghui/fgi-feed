@@ -87,18 +87,28 @@ def get_latest_fgi(logger, method=None):
 
         if method == ROUND.DAY:
             item_title = f"Fear & Greed Previous Close: {fgi_close_value} ({fgi_close_rating})"
-            item_date_published = fgi_close_timestamp
+        elif method == ROUND.HOUR:
+            item_title = f"Fear & Greed Hourly: {fgi_latest_value} ({fgi_latest_rating})"
         else:
             item_title = f"Fear & Greed Latest: {fgi_latest_value} ({fgi_latest_rating})"
-            item_date_published = fgi_latest_timestamp
-        
-        converted_date = datetime.fromtimestamp(
-            item_date_published / 1000)   # convert from millisecond to second
+
+        if method == ROUND.DAY:
+            converted_date = datetime.fromtimestamp(
+                fgi_close_timestamp / 1000)   # convert from millisecond to second
+            item_timestamp = fgi_close_timestamp
+        elif method == ROUND.HOUR:
+            converted_date = datetime.fromtimestamp(
+                fgi_latest_timestamp / 1000).replace(minute=0, second=0, microsecond=0)
+            item_timestamp = converted_date.timestamp()
+        else:
+            converted_date = datetime.fromtimestamp(
+                fgi_latest_timestamp / 1000)   # convert from millisecond to second
+            item_timestamp = fgi_latest_timestamp
 
         item_content_text = 'As of ' + converted_date.strftime('%c')
 
         feed_item = JsonFeedItem(
-            id=str(item_date_published),  # use timestamp as unique id
+            id=str(item_timestamp),  # use timestamp as unique id
             url=url,
             title=item_title,
             date_published=converted_date.isoformat(),
