@@ -102,7 +102,7 @@ def get_latest_fgi(logger, method=None):
         )
 
         # for OPEN rounding methods, append item only when FGI is different from previous close
-        if (method != ROUND.HOUR_OPEN and fgi_latest_value != fgi_close_value):
+        if not (method == ROUND.HOUR_OPEN and fgi_latest_value == fgi_close_value):
             generated_items.append(feed_item)
 
     else:
