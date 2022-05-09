@@ -9,6 +9,15 @@ Use the [Docker build](https://github.com/users/leonghui/packages/container/pack
 
 2. Access the feed using the URL: `http://<host>:5000/`
 
+By default, the latest Fear & Greed Index is used to create a feed item.
+
+To avoid repetitive updates in your RSS reader, you can try the following "rounding" methods:
+1. Daily index at previous close: `http://<host>:5000/daily`
+
+2. Hourly index (rounded down): `http://<host>:5000/hourly`
+
+3. Hourly index (if different from previous close, i.e. when markets are open): `http://<host>:5000/hourly_open`
+
 Tested with:
 - [Nextcloud News App](https://github.com/nextcloud/news)
 
