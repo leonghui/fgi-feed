@@ -63,20 +63,20 @@ def get_latest_fgi(logger, method=None):
     if fgi_historical_section:
 
         fgi_latest_obj = fgi_historical_data[latest_fgi]
-        fgi_latest_value = floor(fgi_latest_obj.get('y'))
+        fgi_latest_value = fgi_latest_obj.get('y')
         fgi_latest_timestamp = fgi_latest_obj.get('x')
         fgi_latest_rating = fgi_latest_obj.get('rating')
         fgi_close_obj = fgi_historical_data[latest_fgi - 2]
-        fgi_close_value = floor(fgi_close_obj.get('y'))
+        fgi_close_value = fgi_close_obj.get('y')
         fgi_close_timestamp = fgi_close_obj.get('x')
         fgi_close_rating = fgi_close_obj.get('rating')
 
         if method == ROUND.DAY:
-            item_title = f"Fear & Greed Previous Close: {fgi_close_value} ({fgi_close_rating})"
+            item_title = f"Fear & Greed Previous Close: {floor(fgi_close_value)} ({fgi_close_rating})"
         elif (method == ROUND.HOUR or method == ROUND.HOUR_OPEN):
-            item_title = f"Fear & Greed Hourly: {fgi_latest_value} ({fgi_latest_rating})"
+            item_title = f"Fear & Greed Hourly: {floor(fgi_latest_value)} ({fgi_latest_rating})"
         else:
-            item_title = f"Fear & Greed Latest: {fgi_latest_value} ({fgi_latest_rating})"
+            item_title = f"Fear & Greed Latest: {floor(fgi_latest_value)} ({fgi_latest_rating})"
 
         if method == ROUND.DAY:
             converted_date = datetime.utcfromtimestamp(
