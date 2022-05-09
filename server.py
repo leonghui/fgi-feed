@@ -18,6 +18,8 @@ def root():
 def rounded(method):
     if method == 'hourly':
         output = get_latest_fgi(logger=logger, method=ROUND.HOUR)
+    elif method == 'hourly_open':
+        output = get_latest_fgi(logger=logger, method=ROUND.HOUR_OPEN)
     elif method == 'daily':
         output = get_latest_fgi(logger=logger, method=ROUND.DAY)
     else:

@@ -19,6 +19,7 @@ session = Session()
 class ROUND(Enum):
     DAY = auto()
     HOUR = auto()
+    HOUR_OPEN = auto()
 
 
 def process_response(response, logger):
@@ -72,7 +73,7 @@ def get_latest_fgi(logger, method=None):
 
         if method == ROUND.DAY:
             item_title = f"Fear & Greed Previous Close: {fgi_close_value} ({fgi_close_rating})"
-        elif method == ROUND.HOUR:
+        elif (method == ROUND.HOUR or method == ROUND.HOUR_OPEN):
             item_title = f"Fear & Greed Hourly: {fgi_latest_value} ({fgi_latest_rating})"
         else:
             item_title = f"Fear & Greed Latest: {fgi_latest_value} ({fgi_latest_rating})"
@@ -81,7 +82,7 @@ def get_latest_fgi(logger, method=None):
             converted_date = datetime.utcfromtimestamp(
                 fgi_close_timestamp / 1000)   # convert from millisecond to second
             item_timestamp = fgi_close_timestamp
-        elif method == ROUND.HOUR:
+        elif (method == ROUND.HOUR or method == ROUND.HOUR_OPEN):
             converted_date = datetime.utcfromtimestamp(
                 fgi_latest_timestamp / 1000).replace(minute=0, second=0, microsecond=0)
             item_timestamp = converted_date.timestamp()
@@ -100,7 +101,9 @@ def get_latest_fgi(logger, method=None):
             content_text=item_content_text
         )
 
-        generated_items.append(feed_item)
+        # for OPEN rounding methods, append item only when FGI is different from previous close
+        if (method != ROUND.HOUR_OPEN and fgi_latest_value != fgi_close_value):
+            generated_items.append(feed_item)
 
     else:
         logger.warning('Historical values not found')
