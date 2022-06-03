@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, abort
+from flask import Flask, jsonify
 from flask.logging import create_logger
 
 from fgi_feed import get_latest_fgi, ROUND
