@@ -67,15 +67,15 @@ def get_response_json(url, useragent_list, logger):
 
 
 def get_fgi_quote(input) -> FgiQuote:
+    timestamp = input.get('x') / 1000   # convert to second
     value = input.get('y')
     rating = input.get('rating')
-    timestamp = input.get('x') / 1000
 
     return {
+        'timestamp': timestamp,
         'value': value,
         'rating': rating,
         'value_text': f"{floor(value)} ({rating})",
-        'timestamp': timestamp,
         'datetime': datetime.utcfromtimestamp(timestamp),
     }
 

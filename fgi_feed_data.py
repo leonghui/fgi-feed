@@ -1,9 +1,10 @@
+from datetime import datetime
 from typing import TypedDict
 
 
 class FgiQuote(TypedDict):
-    value: str
+    timestamp: float
+    value: float
     rating: str
     value_text: str
-    timestamp: float
-    datetime: str
+    datetime: datetime
