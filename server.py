@@ -4,6 +4,7 @@ from flask.logging import create_logger
 from fgi_feed import get_latest_fgi, ROUND
 
 app = Flask(__name__)
+app.config.update({'JSONIFY_MIMETYPE': 'application/feed+json'})
 logger = create_logger(app)
 
 
