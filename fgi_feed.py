@@ -43,15 +43,15 @@ def get_response_json(url, useragent_list, logger):
         logger.error(f'Exception: {ex}')
         abort(500, description=ex)
 
-   # return HTTP error code
+    # return HTTP error code
     if not response.ok:
         user_agent = None
         if response.status_code == 418:
             logger.warning('Anti-scraping triggered')
             abort(response.status_code)
         else:
-        logger.error('Error from source')
-        logger.debug('Dumping input:' + response.text)
+            logger.error('Error from source')
+            logger.debug('Dumping input:' + response.text)
             abort(response.status_code)
 
     try:
@@ -83,11 +83,14 @@ def get_latest_fgi(logger, useragent_list, method=None):
 
         fgi_latest_obj = fgi_historical_data[latest_fgi]
         fgi_latest_value = fgi_latest_obj.get('y')
-        fgi_latest_timestamp = fgi_latest_obj.get('x')
+        # convert from millisecond to second
+        fgi_latest_timestamp = fgi_latest_obj.get('x') / 1000
         fgi_latest_rating = fgi_latest_obj.get('rating')
+
         fgi_close_obj = fgi_historical_data[latest_fgi - 2]
         fgi_close_value = fgi_close_obj.get('y')
-        fgi_close_timestamp = fgi_close_obj.get('x')
+        # convert from millisecond to second
+        fgi_close_timestamp = fgi_close_obj.get('x') / 1000
         fgi_close_rating = fgi_close_obj.get('rating')
 
         if method == ROUND.DAY:
@@ -98,16 +101,14 @@ def get_latest_fgi(logger, useragent_list, method=None):
             item_title = f"Fear & Greed Latest: {floor(fgi_latest_value)} ({fgi_latest_rating})"
 
         if method == ROUND.DAY:
-            converted_date = datetime.utcfromtimestamp(
-                fgi_close_timestamp / 1000)   # convert from millisecond to second
+            converted_date = datetime.utcfromtimestamp(fgi_close_timestamp)
             item_timestamp = fgi_close_timestamp
         elif (method == ROUND.HOUR or method == ROUND.HOUR_OPEN):
             converted_date = datetime.utcfromtimestamp(
-                fgi_latest_timestamp / 1000).replace(minute=0, second=0, microsecond=0)
+                fgi_latest_timestamp).replace(minute=0, second=0, microsecond=0)
             item_timestamp = converted_date.timestamp()
         else:
-            converted_date = datetime.utcfromtimestamp(
-                fgi_latest_timestamp / 1000)   # convert from millisecond to second
+            converted_date = datetime.utcfromtimestamp(fgi_latest_timestamp)
             item_timestamp = fgi_latest_timestamp
 
         item_content_text = 'As of ' + converted_date.strftime('%c')
