@@ -15,13 +15,13 @@ useragent_list = get_useragent_list(DeviceType.PHONES, logger)
 @app.route('/<method>', methods=['GET'])
 def rounded(method=None):
     if method == 'hourly':
-        output = get_latest_fgi(logger=logger, method=ROUND.HOUR)
+        output = get_latest_fgi(logger, useragent_list, method=ROUND.HOUR)
     elif method == 'hourly_open':
-        output = get_latest_fgi(logger=logger, method=ROUND.HOUR_OPEN)
+        output = get_latest_fgi(logger, useragent_list, method=ROUND.HOUR_OPEN)
     elif method == 'daily':
-        output = get_latest_fgi(logger=logger, method=ROUND.DAY)
+        output = get_latest_fgi(logger, useragent_list, method=ROUND.DAY)
     else:
-        output = get_latest_fgi(logger=logger)
+        output = get_latest_fgi(logger, useragent_list)
 
     return jsonify(output)
 

@@ -1,11 +1,12 @@
 from datetime import datetime
 from enum import Enum, auto
 from math import floor
-
 from flask import abort
 from requests import Session
-
 from json_feed_data import JSONFEED_VERSION_URL, JsonFeedItem, JsonFeedTopLevel
+
+import random
+
 
 FGI_JSON_URL = 'https://production.dataviz.cnn.io'
 FGI_JSON_URI = '/index/fearandgreed/graphdata'
@@ -14,6 +15,7 @@ CNN_FAVICON_URI = '/media/sites/cnn/business-favicon.ico'
 FGI_URI = '/markets/fear-and-greed'
 
 session = Session()
+user_agent = None
 
 
 class ROUND(Enum):
@@ -22,35 +24,52 @@ class ROUND(Enum):
     HOUR_OPEN = auto()
 
 
-def process_response(response, logger):
+def get_response_json(url, useragent_list, logger):
+    global user_agent
+
+    headers = {'Referer': CNN_URL}
+
+    if useragent_list and not user_agent:
+        user_agent = random.choice(useragent_list)
+        logger.debug(
+            f'Using user-agent: "{user_agent}"')
+
+    if user_agent:
+        headers['User-Agent'] = user_agent
+
+    try:
+        response = session.get(url, headers=headers)
+    except Exception as ex:
+        logger.error(f'Exception: {ex}')
+        abort(500, description=ex)
+
    # return HTTP error code
     if not response.ok:
+        user_agent = None
+        if response.status_code == 418:
+            logger.warning('Anti-scraping triggered')
+            abort(response.status_code)
+        else:
         logger.error('Error from source')
         logger.debug('Dumping input:' + response.text)
-        abort(
-            500, description=f"HTTP status from source: {response.status_code}")
+            abort(response.status_code)
 
     try:
         return response.json()
     except ValueError:
-        logger.error(f'"{query_object.query}" - invalid API response')
+        logger.error('Invalid API response')
         logger.debug(
-            f'"{query_object.query}" - dumping input: {response.text}')
+            f'Dumping input: {response.text}')
         abort(
-            500, description='Invalid API response')
+            500,
+            description='Invalid API response'
+        )
 
 
-def get_latest_fgi(logger, method=None):
+def get_latest_fgi(logger, useragent_list, method=None):
     url = FGI_JSON_URL + FGI_JSON_URI
 
-    logger.debug(f"Querying endpoint: {url}")
-    try:
-        response = session.get(url)
-    except Exception as ex:
-        logger.error(f"Exception: {ex}")
-        abort(500, description=ex)
-
-    response_json = process_response(response, logger)
+    response_json = get_response_json(url, useragent_list, logger)
 
     feed_title = 'Fear and Greed Index'
 
