@@ -2,10 +2,13 @@ from flask import Flask, jsonify, abort
 from flask.logging import create_logger
 
 from fgi_feed import get_latest_fgi, ROUND
+from mozilla_devices import get_useragent_list, DeviceType
+
 
 app = Flask(__name__)
 app.config.update({'JSONIFY_MIMETYPE': 'application/feed+json'})
 logger = create_logger(app)
+useragent_list = get_useragent_list(DeviceType.PHONES, logger)
 
 
 @app.route('/', methods=['GET'])
