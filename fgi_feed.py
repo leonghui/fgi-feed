@@ -4,6 +4,7 @@ from math import floor
 from flask import abort
 from requests import Session
 from json_feed_data import JSONFEED_VERSION_URL, JsonFeedItem, JsonFeedTopLevel
+from fgi_feed_data import FgiQuote
 import random
 
 
@@ -65,6 +66,20 @@ def get_response_json(url, useragent_list, logger):
         )
 
 
+def get_fgi_quote(input) -> FgiQuote:
+    value = input.get('y')
+    rating = input.get('rating')
+    timestamp = input.get('x') / 1000
+
+    return {
+        'value': value,
+        'rating': rating,
+        'value_text': f"{floor(value)} ({rating})",
+        'timestamp': timestamp,
+        'datetime': datetime.utcfromtimestamp(timestamp),
+    }
+
+
 def get_latest_fgi(logger, useragent_list, method=None):
     url = FGI_JSON_URL + FGI_JSON_URI
 
@@ -80,17 +95,8 @@ def get_latest_fgi(logger, useragent_list, method=None):
 
     if fgi_historical_section:
 
-        fgi_latest_obj = fgi_historical_data[latest_fgi]
-        fgi_latest_value = fgi_latest_obj.get('y')
-        # convert from millisecond to second
-        fgi_latest_timestamp = fgi_latest_obj.get('x') / 1000
-        fgi_latest_rating = fgi_latest_obj.get('rating')
-
-        fgi_close_obj = fgi_historical_data[latest_fgi - 2]
-        fgi_close_value = fgi_close_obj.get('y')
-        # convert from millisecond to second
-        fgi_close_timestamp = fgi_close_obj.get('x') / 1000
-        fgi_close_rating = fgi_close_obj.get('rating')
+        latest_quote = get_fgi_quote(fgi_historical_data[latest_fgi])
+        closing_quote = get_fgi_quote(fgi_historical_data[latest_fgi - 2])
 
         if method == ROUND.DAY:
             round_title = 'Previous Close: '
@@ -100,22 +106,20 @@ def get_latest_fgi(logger, useragent_list, method=None):
             round_title = 'Latest: '
 
         if method == ROUND.DAY:
-            fgi_value_title = f"{floor(fgi_close_value)} ({fgi_close_rating})"
+            fgi_value_title = closing_quote['value_text']
         else:
-            fgi_value_title = f"{floor(fgi_latest_value)} "
-            fgi_value_title += f"({fgi_latest_rating})"
+            fgi_value_title = latest_quote['value_text']
 
         if method == ROUND.DAY:
-            converted_date = datetime.utcfromtimestamp(fgi_close_timestamp)
-            item_timestamp = fgi_close_timestamp
+            converted_date = closing_quote['datetime']
+            item_timestamp = closing_quote['timestamp']
         elif (method == ROUND.HOUR or method == ROUND.HOUR_OPEN):
-            converted_date = datetime.utcfromtimestamp(
-                fgi_latest_timestamp
-            ).replace(minute=0, second=0, microsecond=0)
+            converted_date = latest_quote['datetime'].replace(
+                minute=0, second=0, microsecond=0)
             item_timestamp = converted_date.timestamp()
         else:
-            converted_date = datetime.utcfromtimestamp(fgi_latest_timestamp)
-            item_timestamp = fgi_latest_timestamp
+            converted_date = latest_quote['datetime']
+            item_timestamp = latest_quote['timestamp']
 
         feed_item = JsonFeedItem(
             id=str(item_timestamp),  # use timestamp as unique id
@@ -128,7 +132,7 @@ def get_latest_fgi(logger, useragent_list, method=None):
         # for OPEN rounding methods, append item only when FGI is different
         # from previous close
         if not (method == ROUND.HOUR_OPEN and
-                fgi_latest_value == fgi_close_value
+                latest_quote['value'] == closing_quote['value']
                 ):
             generated_items.append(feed_item)
 
