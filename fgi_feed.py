@@ -4,7 +4,6 @@ from math import floor
 from flask import abort
 from requests import Session
 from json_feed_data import JSONFEED_VERSION_URL, JsonFeedItem, JsonFeedTopLevel
-
 import random
 
 
@@ -94,35 +93,43 @@ def get_latest_fgi(logger, useragent_list, method=None):
         fgi_close_rating = fgi_close_obj.get('rating')
 
         if method == ROUND.DAY:
-            item_title = f"Fear & Greed Previous Close: {floor(fgi_close_value)} ({fgi_close_rating})"
+            round_title = 'Previous Close: '
         elif (method == ROUND.HOUR or method == ROUND.HOUR_OPEN):
-            item_title = f"Fear & Greed Hourly: {floor(fgi_latest_value)} ({fgi_latest_rating})"
+            round_title = 'Hourly: '
         else:
-            item_title = f"Fear & Greed Latest: {floor(fgi_latest_value)} ({fgi_latest_rating})"
+            round_title = 'Latest: '
+
+        if method == ROUND.DAY:
+            fgi_value_title = f"{floor(fgi_close_value)} ({fgi_close_rating})"
+        else:
+            fgi_value_title = f"{floor(fgi_latest_value)} "
+            fgi_value_title += f"({fgi_latest_rating})"
 
         if method == ROUND.DAY:
             converted_date = datetime.utcfromtimestamp(fgi_close_timestamp)
             item_timestamp = fgi_close_timestamp
         elif (method == ROUND.HOUR or method == ROUND.HOUR_OPEN):
             converted_date = datetime.utcfromtimestamp(
-                fgi_latest_timestamp).replace(minute=0, second=0, microsecond=0)
+                fgi_latest_timestamp
+            ).replace(minute=0, second=0, microsecond=0)
             item_timestamp = converted_date.timestamp()
         else:
             converted_date = datetime.utcfromtimestamp(fgi_latest_timestamp)
             item_timestamp = fgi_latest_timestamp
 
-        item_content_text = 'As of ' + converted_date.strftime('%c')
-
         feed_item = JsonFeedItem(
             id=str(item_timestamp),  # use timestamp as unique id
             url=CNN_URL + FGI_URI,
-            title=item_title,
+            title='Fear & Greed ' + round_title + fgi_value_title,
             date_published=converted_date.isoformat(),
-            content_text=item_content_text
+            content_text='As of ' + converted_date.strftime('%c')
         )
 
-        # for OPEN rounding methods, append item only when FGI is different from previous close
-        if not (method == ROUND.HOUR_OPEN and fgi_latest_value == fgi_close_value):
+        # for OPEN rounding methods, append item only when FGI is different
+        # from previous close
+        if not (method == ROUND.HOUR_OPEN and
+                fgi_latest_value == fgi_close_value
+                ):
             generated_items.append(feed_item)
 
     else:
