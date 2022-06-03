@@ -8,14 +8,8 @@ logger = create_logger(app)
 
 
 @app.route('/', methods=['GET'])
-def root():
-    output = get_latest_fgi(logger=logger)
-
-    return jsonify(output)
-
-
 @app.route('/<method>', methods=['GET'])
-def rounded(method):
+def rounded(method=None):
     if method == 'hourly':
         output = get_latest_fgi(logger=logger, method=ROUND.HOUR)
     elif method == 'hourly_open':
@@ -23,7 +17,7 @@ def rounded(method):
     elif method == 'daily':
         output = get_latest_fgi(logger=logger, method=ROUND.DAY)
     else:
-        abort(500, description='Error, invalid rounding method')
+        output = get_latest_fgi(logger=logger)
 
     return jsonify(output)
 
