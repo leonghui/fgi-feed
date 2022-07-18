@@ -37,5 +37,5 @@ jobs:
       
       - name: Delete Untagged
         uses: camargo/delete-untagged-action@v1
-          with:
-            github-token: ${{ secrets.DELETE_PACKAGES_TOKEN }}
+        with:
+          github-token: ${{ secrets.DELETE_PACKAGES_TOKEN }}
