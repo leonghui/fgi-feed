@@ -35,5 +35,8 @@ jobs:
           push: true
           tags: ${{ env.REGISTRY }}/${{ github.repository }}:latest
       
-      - name: Delete Untagged
-        uses: camargo/delete-untagged-action@v1
+      - name: Delete Untagged Containers
+        uses: dylanratcliffe/delete-untagged-containers@v1.2.3
+        with:
+          package_name: ${{ github.repository }}
+          token: ${{ secrets.GITHUB_TOKEN }}
