@@ -34,3 +34,6 @@ jobs:
           context: .
           push: true
           tags: ${{ env.REGISTRY }}/${{ github.repository }}:latest
+      
+      - name: Delete Untagged
+        uses: camargo/delete-untagged-action@v1
