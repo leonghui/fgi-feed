@@ -35,8 +35,12 @@ jobs:
           push: true
           tags: ${{ env.REGISTRY }}/${{ github.repository }}:latest
       
+      - name: Fetch Repo Name @ fzngagan
+        id: repo-name
+        run: echo "::set-output name=value::$(echo '${{ github.repository }}' | awk -F '/' '{print $2}')"
+      
       - name: Delete Untagged Containers
         uses: dylanratcliffe/delete-untagged-containers@v1.2.3
         with:
-          package_name: ${{ github.repository }}
+          package_name: ${{ steps.repo-name.outputs.value }}
           token: ${{ secrets.GITHUB_TOKEN }}
