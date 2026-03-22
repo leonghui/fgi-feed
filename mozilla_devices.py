@@ -3,7 +3,6 @@ from requests.models import Response
 
 from config import logger
 from pydantic import BaseModel
-import requests_cache
 
 CATALOG_URL = "https://code.cdn.mozilla.net/devices/devices.json"
 
@@ -24,9 +23,6 @@ class Devices(BaseModel):
     tablets: list[Device]
     laptops: list[Device]
     televisions: list[Device]
-
-
-requests_cache.install_cache(cache_name="/tmp/catalog_cache", expire_after=86400)
 
 
 def get_useragent_list() -> list[str]:
