@@ -9,9 +9,9 @@ app: FastAPI = FastAPI()
 
 
 @app.get(path="/")
-@app.get(path="/{round_method}")
-def root(round_method: ROUNDING | None = None):
-    result: JsonFeedTopLevel = get_latest_fgi(method=round_method)
+@app.get(path="/{method}")
+def root(method: ROUNDING | None = None):
+    result: JsonFeedTopLevel = get_latest_fgi(method)
     return result.model_dump(exclude_unset=True)
 
 

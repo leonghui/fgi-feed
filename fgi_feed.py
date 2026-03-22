@@ -51,7 +51,7 @@ def get_response(url) -> Response:
 class Formatter:
     latest: Quote
     closing: Quote
-    round_titles: dict[ROUNDING, str] = {
+    title_map: dict[ROUNDING, str] = {
         ROUNDING.daily: "Previous Close:",
         ROUNDING.hourly: "Hourly:",
         ROUNDING.hourly_open: "Hourly:",
@@ -61,11 +61,16 @@ class Formatter:
         self.latest = latest
         self.closing = closing
 
-    def get_title_text(self, method: ROUNDING) -> str:
+    def get_title_text(self, method: ROUNDING | None) -> str:
         quote: Quote = self.closing if method == ROUNDING.daily else self.latest
-        return f"{self.round_titles.get(method, 'Latest:')} {floor(quote.y)} ({quote.rating})"
+        quote_text: str = f"{floor(quote.y)} ({quote.rating})"
+        return (
+            f"{self.title_map.get(method)} {quote_text}"
+            if method
+            else f"Latest: {quote_text}"
+        )
 
-    def get_date(self, method: ROUNDING) -> datetime:
+    def get_date(self, method: ROUNDING | None) -> datetime:
         date_map: dict[ROUNDING, datetime] = {
             ROUNDING.daily: self.closing.x,
             ROUNDING.hourly: self.latest.x.replace(minute=0, second=0, microsecond=0),
@@ -73,10 +78,10 @@ class Formatter:
                 minute=0, second=0, microsecond=0
             ),
         }
-        return date_map.get(method, datetime.now())
+        return date_map.get(method, datetime.now()) if method else datetime.now()
 
 
-def get_latest_fgi(method: ROUNDING) -> JsonFeedTopLevel:
+def get_latest_fgi(method: ROUNDING | None) -> JsonFeedTopLevel:
     url = FGI_JSON_URL + FGI_JSON_URI
 
     response: Response = get_response(url)
