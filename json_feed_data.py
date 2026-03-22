@@ -1,31 +1,31 @@
-from typing import List, TypedDict
+from pydantic import BaseModel
 
-JSONFEED_VERSION_URL = 'https://jsonfeed.org/version/1.1'
-
-
-class JsonFeedAuthor(TypedDict):
-    name: str
-    url: str
-    avatar: str
+JSONFEED_VERSION_URL = "https://jsonfeed.org/version/1.1"
 
 
-class JsonFeedItem(TypedDict):
+class JsonFeedAuthor(BaseModel):
+    name: str | None = None
+    url: str | None = None
+    avatar: str | None = None
+
+
+class JsonFeedItem(BaseModel):
     id: str  # required
-    url: str
-    title: str
-    content_html: str
-    content_text: str
-    image: str
-    date_published: str
-    date_modified: str
-    authors: List[JsonFeedAuthor]
+    url: str | None = None
+    title: str | None = None
+    content_html: str | None = None
+    content_text: str | None = None
+    image: str | None = None
+    date_published: str | None = None
+    date_modified: str | None = None
+    authors: list[JsonFeedAuthor] | None = None
 
 
-class JsonFeedTopLevel(TypedDict):
+class JsonFeedTopLevel(BaseModel):
     title: str  # required
-    items: List[JsonFeedItem]  # required
+    items: list[JsonFeedItem]  # required
     version: str  # required
-    home_page_url: str
-    description: str
-    favicon: str
-    authors: List[JsonFeedAuthor]
+    home_page_url: str | None = None
+    description: str | None = None
+    favicon: str | None = None
+    authors: list[JsonFeedAuthor] | None = None

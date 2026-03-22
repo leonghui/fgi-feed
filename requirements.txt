@@ -1,2 +1,5 @@
-flask
+fastapi
+pydantic
 requests
+requests_cache
+uvicorn

@@ -1,28 +1,47 @@
 from requests import Session
-from enum import Enum
+from requests.models import Response
+
+from config import logger
+from pydantic import BaseModel
+import requests_cache
+
+CATALOG_URL = "https://code.cdn.mozilla.net/devices/devices.json"
 
 
-CATALOG_URL = 'https://code.cdn.mozilla.net/devices/devices.json'
+class Device(BaseModel):
+    name: str
+    width: int
+    height: int
+    pixelRatio: float
+    userAgent: str
+    touch: bool
+    os: str
 
 
-class DeviceType(Enum):
-    PHONES = 'phones'
-    TABLETS = 'tablets'
-    LAPTOPS = 'laptops'
-    TELEVISIONS = 'televisions'
+class Devices(BaseModel):
+    TYPES: list[str]
+    phones: list[Device]
+    tablets: list[Device]
+    laptops: list[Device]
+    televisions: list[Device]
 
 
-def get_useragent_list(device_type, logger):
-    logger.debug(f"Querying endpoint: {CATALOG_URL}")
-    catalog_response = Session().get(CATALOG_URL)
-    catalog_json = catalog_response.json() if catalog_response.ok else None
+requests_cache.install_cache(cache_name="/tmp/catalog_cache", expire_after=86400)
 
-    if catalog_response.ok:
-        useragent_list = [device['userAgent']
-                          for device in catalog_json[device_type.value]]
-        logger.info(f"Found {len(useragent_list)} user agents for {device_type.name.lower()}")
-        return useragent_list
 
-    else:
-        logger.warning('Unable to get useragent list.')
-        return None
+def get_useragent_list() -> list[str]:
+    logger.debug(msg=f"Querying endpoint: {CATALOG_URL}")
+    catalog_response: Response = Session().get(url=CATALOG_URL)
+
+    if not catalog_response.ok:
+        logger.warning(msg="Unable to get useragent list.")
+        return []
+    devices: Devices = Devices.model_validate(obj=catalog_response.json())
+    return (
+        [phone.userAgent for phone in devices.phones]
+        if devices.phones
+        else [tablet.userAgent for tablet in devices.tablets]
+    )
+
+
+useragent_list: list[str] = get_useragent_list()

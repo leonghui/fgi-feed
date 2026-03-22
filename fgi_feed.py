@@ -1,150 +1,115 @@
 from datetime import datetime
-from enum import Enum, auto
+from enum import Enum
 from math import floor
-from flask import abort
-from requests import Session
-from json_feed_data import JSONFEED_VERSION_URL, JsonFeedItem, JsonFeedTopLevel
-from fgi_feed_data import FgiQuote
 import random
 
+from fastapi.exceptions import HTTPException
+from requests.models import Response
+from requests.sessions import Session
 
-FGI_JSON_URL = 'https://production.dataviz.cnn.io'
-FGI_JSON_URI = '/index/fearandgreed/graphdata'
-CNN_URL = 'https://edition.cnn.com'
-CNN_FAVICON_URI = '/media/sites/cnn/business-favicon.ico'
-FGI_URI = '/markets/fear-and-greed'
+from config import CNN_FAVICON_URI, CNN_URL, FGI_JSON_URI, FGI_JSON_URL, FGI_URI, logger
+from json_feed_data import JSONFEED_VERSION_URL, JsonFeedItem, JsonFeedTopLevel
+from models import GraphData, Quote
+from mozilla_devices import useragent_list
 
-session = Session()
-user_agent = None
-
-
-class ROUND(Enum):
-    DAY = auto()
-    HOUR = auto()
-    HOUR_OPEN = auto()
+session: Session = Session()
 
 
-def get_response_json(url, useragent_list, logger):
-    global user_agent
+class ROUNDING(Enum):
+    daily = "daily"
+    hourly = "hourly"
+    hourly_open = "hourly_open"
+    none = None
 
-    headers = {'Referer': CNN_URL}
 
-    if useragent_list and not user_agent:
-        user_agent = random.choice(useragent_list)
-        logger.debug(
-            f'Using user-agent: "{user_agent}"')
+def get_response(url) -> Response:
+    headers: dict[str, str] = {"Referer": CNN_URL}
 
-    if user_agent:
-        headers['User-Agent'] = user_agent
+    user_agent: str = random.choice(seq=useragent_list)
+    logger.debug(msg=f'Using user-agent: "{user_agent}"')
+    headers["User-Agent"] = user_agent
 
     try:
-        response = session.get(url, headers=headers)
+        response: Response = session.get(url, headers=headers)
     except Exception as ex:
-        logger.error(f'Exception: {ex}')
-        abort(500, description=ex)
+        logger.error(msg=f"Exception: {ex}")
+        raise HTTPException(status_code=500, detail=ex)
 
     # return HTTP error code
     if not response.ok:
-        user_agent = None
         if response.status_code == 418:
-            logger.warning('Anti-scraping triggered')
-            abort(response.status_code)
+            logger.warning(msg="Anti-scraping triggered")
+            raise HTTPException(response.status_code)
         else:
-            logger.error('Error from source')
-            logger.debug('Dumping input:' + response.text)
-            abort(response.status_code)
+            logger.error(msg="Error from source")
+            logger.debug(msg="Dumping input:" + response.text)
+            raise HTTPException(response.status_code)
 
-    try:
-        return response.json()
-    except ValueError:
-        logger.error('Invalid API response')
-        logger.debug(
-            f'Dumping input: {response.text}')
-        abort(
-            500,
-            description='Invalid API response'
-        )
+    return response
 
 
-def get_fgi_quote(input) -> FgiQuote:
-    timestamp = input.get('x') / 1000   # convert to second
-    value = input.get('y')
-    rating = input.get('rating')
-
-    return {
-        'timestamp': timestamp,
-        'value': value,
-        'rating': rating,
-        'value_text': f"{floor(value)} ({rating})",
-        'datetime': datetime.utcfromtimestamp(timestamp),
+class Formatter:
+    latest: Quote
+    closing: Quote
+    round_titles: dict[ROUNDING, str] = {
+        ROUNDING.daily: "Previous Close:",
+        ROUNDING.hourly: "Hourly:",
+        ROUNDING.hourly_open: "Hourly:",
     }
 
+    def __init__(self, latest, closing: Quote) -> None:
+        self.latest = latest
+        self.closing = closing
 
-def get_latest_fgi(logger, useragent_list, method=None):
+    def get_title_text(self, method: ROUNDING) -> str:
+        quote: Quote = self.closing if method == ROUNDING.daily else self.latest
+        return f"{self.round_titles.get(method, 'Latest:')} {floor(quote.y)} ({quote.rating})"
+
+    def get_date(self, method: ROUNDING) -> datetime:
+        date_map: dict[ROUNDING, datetime] = {
+            ROUNDING.daily: self.closing.x,
+            ROUNDING.hourly: self.latest.x.replace(minute=0, second=0, microsecond=0),
+            ROUNDING.hourly_open: self.latest.x.replace(
+                minute=0, second=0, microsecond=0
+            ),
+        }
+        return date_map.get(method, datetime.now())
+
+
+def get_latest_fgi(method: ROUNDING) -> JsonFeedTopLevel:
     url = FGI_JSON_URL + FGI_JSON_URI
 
-    response_json = get_response_json(url, useragent_list, logger)
+    response: Response = get_response(url)
 
-    feed_title = 'Fear and Greed Index'
+    graph_data: GraphData = GraphData.model_validate(obj=response.json())
 
-    generated_items = []
+    latest: Quote = graph_data.fear_and_greed_historical.data[-1]
+    closing: Quote = graph_data.fear_and_greed_historical.data[-2]
+    formatter: Formatter = Formatter(latest, closing)
 
-    fgi_historical_section = response_json.get('fear_and_greed_historical')
-    fgi_historical_data = fgi_historical_section.get('data')
-    latest_fgi = len(fgi_historical_data) - 1
+    quote_date: datetime = formatter.get_date(method)
 
-    if fgi_historical_section:
+    feed_item: JsonFeedItem = JsonFeedItem(
+        id=str(int(quote_date.timestamp())),  # use timestamp as unique id
+        url=CNN_URL + FGI_URI,
+        title="Fear & Greed " + formatter.get_title_text(method),
+        date_published=quote_date.isoformat(),
+        content_text="As of " + quote_date.strftime(format="%c"),
+    )
 
-        latest_quote = get_fgi_quote(fgi_historical_data[latest_fgi])
-        closing_quote = get_fgi_quote(fgi_historical_data[latest_fgi - 2])
+    # for OPEN rounding methods, append item only when FGI is different
+    # from previous close
+    generated_items: list[JsonFeedItem] = []
 
-        if method == ROUND.DAY:
-            round_title = 'Previous Close: '
-        elif (method == ROUND.HOUR or method == ROUND.HOUR_OPEN):
-            round_title = 'Hourly: '
-        else:
-            round_title = 'Latest: '
+    if not (method == ROUNDING.hourly_open and latest.y == closing.y):
+        generated_items.append(feed_item)
 
-        if method == ROUND.DAY:
-            fgi_value_title = closing_quote['value_text']
-        else:
-            fgi_value_title = latest_quote['value_text']
-
-        if method == ROUND.DAY:
-            converted_date = closing_quote['datetime']
-            item_timestamp = closing_quote['timestamp']
-        elif (method == ROUND.HOUR or method == ROUND.HOUR_OPEN):
-            converted_date = latest_quote['datetime'].replace(
-                minute=0, second=0, microsecond=0)
-            item_timestamp = converted_date.timestamp()
-        else:
-            converted_date = latest_quote['datetime']
-            item_timestamp = latest_quote['timestamp']
-
-        feed_item = JsonFeedItem(
-            id=str(item_timestamp),  # use timestamp as unique id
-            url=CNN_URL + FGI_URI,
-            title='Fear & Greed ' + round_title + fgi_value_title,
-            date_published=converted_date.isoformat(),
-            content_text='As of ' + converted_date.strftime('%c')
-        )
-
-        # for OPEN rounding methods, append item only when FGI is different
-        # from previous close
-        if not (method == ROUND.HOUR_OPEN and
-                latest_quote['value'] == closing_quote['value']
-                ):
-            generated_items.append(feed_item)
-
-    else:
-        logger.warning('Historical values not found')
-
-    json_feed = JsonFeedTopLevel(
-        title=feed_title,
+    json_feed: JsonFeedTopLevel = JsonFeedTopLevel(
+        title="Fear and Greed Index",
         items=generated_items,
         version=JSONFEED_VERSION_URL,
         home_page_url=CNN_URL + FGI_URI,
-        favicon=CNN_URL + CNN_FAVICON_URI
+        favicon=CNN_URL + CNN_FAVICON_URI,
     )
 
     return json_feed
