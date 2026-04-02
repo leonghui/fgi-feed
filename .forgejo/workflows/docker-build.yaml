@@ -1,0 +1,34 @@
+on:
+  push:
+    branches:
+    - 'main'
+  workflow_dispatch:
+  schedule:
+    - cron: "0 0 1 * *"
+
+jobs:
+  build:
+    runs-on: docker
+
+    steps:
+      - name: Checkout repository
+        run: |
+          git clone https://${{ forgejo.repository_owner }}:${{ secrets.REPO_TOKEN }}@${{ vars.SERVER_DOMAIN }}/${{ forgejo.repository }}
+          cd ${{ forgejo.event.repository.name }}
+          git checkout ${{ forgejo.sha }}
+
+      - name: Log into registry
+        run: |
+          docker login ${{ vars.SERVER_DOMAIN }} -u ${{ forgejo.repository_owner }} -p ${{ secrets.PACKAGE_TOKEN }}
+
+      - name: Build and push Docker image
+        run: |
+          cd ${{ forgejo.event.repository.name }}
+          docker build . -t ${{ vars.SERVER_DOMAIN }}/${{ forgejo.repository }}:latest
+          docker push ${{ vars.SERVER_DOMAIN }}/${{ forgejo.repository }}:latest
+
+      # - name: Delete Untagged images
+      #   uses: actions/delete-package-versions@v5
+      #   with:
+      #     package-name: ${{ forgejo.event.repository.name }}
+      #     package-type: container
